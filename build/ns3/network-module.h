@@ -12,6 +12,7 @@
 #include "application-container.h"
 #include "application.h"
 #include "broadcom-egress-queue.h"
+#include "broadcom-node.h"
 #include "buffer.h"
 #include "byte-tag-list.h"
 #include "channel-list.h"

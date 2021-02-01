@@ -3,11 +3,11 @@ AR = '/usr/bin/ar'
 ARFLAGS = 'rcs'
 BINDIR = '/usr/local/bin'
 BOOST_VERSION = '1_58'
-BUILD_PROFILE = 'optimized'
-BUILD_SUFFIX = '-optimized'
+BUILD_PROFILE = 'debug'
+BUILD_SUFFIX = '-debug'
 CC = ['/usr/bin/gcc']
-CCDEFINES = []
-CCFLAGS = ['-O3', '-g', '-O3', '-g', '-std=gnu++11', '-march=native', '-Wno-error=deprecated-declarations', '-fstrict-aliasing', '-Wstrict-aliasing']
+CCDEFINES = ['_DEBUG']
+CCFLAGS = ['-O0', '-ggdb', '-g3', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-Wno-error=deprecated-declarations', '-fstrict-aliasing', '-Wstrict-aliasing']
 CCFLAGS_PTHREAD = '-pthread'
 CCFLAGS_PYEXT = ['-fvisibility=hidden']
 CCLNK_SRC_F = []
@@ -24,8 +24,8 @@ COMPILER_CC = 'gcc'
 COMPILER_CXX = 'g++'
 CPPPATH_ST = '-I%s'
 CXX = ['/usr/bin/g++']
-CXXDEFINES = []
-CXXFLAGS = ['-O3', '-g', '-std=gnu++11', '-march=native', '-Wno-error=deprecated-declarations', '-fstrict-aliasing', '-Wstrict-aliasing']
+CXXDEFINES = ['_DEBUG']
+CXXFLAGS = ['-O0', '-ggdb', '-g3', '-std=gnu++11', '-Wno-error=deprecated-declarations', '-fstrict-aliasing', '-Wstrict-aliasing']
 CXXFLAGS_MACBUNDLE = ['-fPIC']
 CXXFLAGS_PTHREAD = '-pthread'
 CXXFLAGS_PYEMBED = ['-fno-strict-aliasing', '-fwrapv', '-fstack-protector-strong', '-fno-strict-aliasing']
@@ -38,7 +38,7 @@ CXX_SRC_F = []
 CXX_TGT_F = ['-c', '-o']
 DATADIR = '/usr/local/share'
 DATAROOTDIR = '/usr/local/share'
-DEFINES = ['HAVE_PACKET_H=1', 'HAVE_IF_TUN_H=1']
+DEFINES = ['NS3_ASSERT_ENABLE', 'NS3_LOG_ENABLE', 'HAVE_PACKET_H=1', 'HAVE_IF_TUN_H=1']
 DEFINES_PYEMBED = ['NDEBUG', '_FORTIFY_SOURCE=2']
 DEFINES_PYEXT = ['NDEBUG', '_FORTIFY_SOURCE=2', 'NDEBUG', '_FORTIFY_SOURCE=2']
 DEFINES_ST = '-D%s'

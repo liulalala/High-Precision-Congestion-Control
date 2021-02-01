@@ -216,13 +216,16 @@ Ptr<RdmaQueuePair> RdmaHw::GetQp(uint16_t sport, uint16_t pg){
 		return it->second;
 	return NULL;
 }
-void RdmaHw::AddQueuePair(uint64_t size, uint16_t pg, Ipv4Address sip, Ipv4Address dip, uint16_t sport, uint16_t dport, uint32_t win, uint64_t baseRtt){
+void RdmaHw::AddQueuePair(uint64_t size, uint16_t pg, Ipv4Address sip, Ipv4Address dip, uint16_t sport, uint16_t dport, uint32_t win, uint64_t baseRtt, uint32_t src, uint32_t dst, uint32_t flow_id){
 	// create qp
 	Ptr<RdmaQueuePair> qp = CreateObject<RdmaQueuePair>(pg, sip, dip, sport, dport);
 	qp->SetSize(size);
 	qp->SetWin(win);
 	qp->SetBaseRtt(baseRtt);
 	qp->SetVarWin(m_var_win);
+	qp->SetSrc(src);
+	qp->SetDst(dst);
+	qp->SetFlowId(flow_id);
 
 	// add qp
 	uint32_t nic_idx = GetNicIdxOfQp(qp);
@@ -626,6 +629,7 @@ void RdmaHw::cnp_received_mlx(Ptr<RdmaQueuePair> q){
 void RdmaHw::CheckRateDecreaseMlx(Ptr<RdmaQueuePair> q){
 	ScheduleDecreaseRateMlx(q, 0);
 	if (q->mlx.m_decrease_cnp_arrived){
+		//std::cout<<"CheckRateDecreaseMlx cnp"<<std::endl;
 		#if PRINT_LOG
 		printf("%lu rate dec: %08x %08x %u %u (%0.3lf %.3lf)->", Simulator::Now().GetTimeStep(), q->sip.Get(), q->dip.Get(), q->sport, q->dport, q->mlx.m_targetRate.GetBitRate() * 1e-9, q->m_rate.GetBitRate() * 1e-9);
 		#endif
@@ -648,6 +652,7 @@ void RdmaHw::CheckRateDecreaseMlx(Ptr<RdmaQueuePair> q){
 	}
 }
 void RdmaHw::ScheduleDecreaseRateMlx(Ptr<RdmaQueuePair> q, uint32_t delta){
+
 	q->mlx.m_eventDecreaseRate = Simulator::Schedule(MicroSeconds(m_rateDecreaseInterval) + NanoSeconds(delta), &RdmaHw::CheckRateDecreaseMlx, this, q);
 }
 
@@ -684,6 +689,7 @@ void RdmaHw::ActiveIncreaseMlx(Ptr<RdmaQueuePair> q){
 	uint32_t nic_idx = GetNicIdxOfQp(q);
 	Ptr<QbbNetDevice> dev = m_nic[nic_idx].dev;
 	// increate rate
+	//std::cout<<"increase "<<m_rai<<std::endl;
 	q->mlx.m_targetRate += m_rai;
 	if (q->mlx.m_targetRate > dev->GetDataRate())
 		q->mlx.m_targetRate = dev->GetDataRate();

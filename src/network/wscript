@@ -139,6 +139,7 @@ def build(bld):
         'utils/leaky-bucket.h',
 		'utils/custom-header.h',
 		'utils/int-header.h',
+	'utils/broadcom-node.h',
         ]
 
     if (bld.env['ENABLE_EXAMPLES']):

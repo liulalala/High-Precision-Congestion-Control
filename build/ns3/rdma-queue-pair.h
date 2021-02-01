@@ -23,6 +23,9 @@ public:
 	uint16_t m_ipid;
 	uint32_t m_win; // bound of on-the-fly packets
 	uint64_t m_baseRtt; // base RTT of this qp
+	uint32_t m_src;
+	uint32_t m_dst;
+	uint32_t m_flow_id;
 	DataRate m_max_rate; // max rate
 	bool m_var_win; // variable window size
 	Time m_nextAvail;	//< Soonest time of next send
@@ -83,6 +86,9 @@ public:
 	void SetWin(uint32_t win);
 	void SetBaseRtt(uint64_t baseRtt);
 	void SetVarWin(bool v);
+	void SetSrc(uint32_t);
+	void SetDst(uint32_t);
+	void SetFlowId(uint32_t);
 
 	uint64_t GetBytesLeft();
 	uint32_t GetHash(void);

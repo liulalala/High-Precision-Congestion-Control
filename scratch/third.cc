@@ -84,6 +84,9 @@ string qlen_mon_file;
 unordered_map<uint64_t, uint32_t> rate2kmax, rate2kmin;
 unordered_map<uint64_t, double> rate2pmax;
 
+uint32_t flow_index = 0;
+uint32_t flow_num = 0;
+
 
 uint64_t nic_rate;
 
@@ -106,10 +109,52 @@ map<Ptr<Node>, map<Ptr<Node>, uint64_t> > pairBw;
 map<Ptr<Node>, map<Ptr<Node>, uint64_t> > pairBdp;
 map<Ptr<Node>, map<Ptr<Node>, uint64_t> > pairRtt;
 
+struct FCT_PAIR{
+
+	FCT_PAIR(uint32_t flow_id, uint32_t src, uint32_t dst, uint32_t size, double fct){
+
+		m_flow_id = flow_id;
+		m_src = src;
+		m_dst = dst;
+		m_size = size;
+		m_fct = fct;
+	}
+
+	uint32_t m_flow_id;
+	uint32_t m_src;
+	uint32_t m_dst;
+	uint64_t m_size;
+	double m_fct;
+};
+
+bool cmp(FCT_PAIR a, FCT_PAIR b){
+		return a.m_src < b.m_src;
+}
+
+vector<FCT_PAIR> fct_pairs;
+
+uint32_t iindex = 0;
 void qp_finish(FILE* fout, Ptr<RdmaQueuePair> q){
 	//fprintf(fout, "%lu QP complete\n", Simulator::Now().GetTimeStep());
-	fprintf(fout, "%08x %08x %u %u %lu %lu %lu\n", q->sip.Get(), q->dip.Get(), q->sport, q->dport, q->m_size, q->startTime.GetTimeStep(), (Simulator::Now() - q->startTime).GetTimeStep());
-	fflush(fout);
+	//fprintf(fout, "%08x %08x %u %u %lu %lu %lu\n", q->sip.Get(), q->dip.Get(), q->sport, q->dport, q->m_size, q->startTime.GetTimeStep(), (Simulator::Now() - q->startTime).GetTimeStep());
+	//fflush(fout);
+	//std::cout<<q->sip.Get()<<" "<<q->dip.Get()<<" "<<q->sport<<" "<<q->dport<<" "<<q->m_size<<" "<<q->startTime.GetTimeStep()<<" "<<(Simulator::Now() - q->startTime).GetTimeStep()<<std::endl;
+
+	int64_t fct = Simulator::Now().GetNanoSeconds() - q->startTime.GetNanoSeconds();
+	//fprintf(fout, "%u %u %u %lu %f \n", q->m_flow_id, q->m_src, q->m_dst, q->m_size, fct/1e3);
+	//fflush(fout);
+	std::cout<<q->m_flow_id<<" "<<q->m_src<<" "<<q->m_dst<<" "<<q->m_size<<" "<<fct/1e3<<std::endl;
+
+	FCT_PAIR fct_pair_ele = FCT_PAIR(q->m_flow_id, q->m_src, q->m_dst, q->m_size, fct/1e3);
+	fct_pairs.push_back(fct_pair_ele);
+	++iindex;
+
+	if(iindex == flow_num){
+		sort(fct_pairs.begin(),fct_pairs.end(), cmp);
+		for(uint32_t i = 0; i < iindex; ++i)
+			fprintf(fout, "%u %u %u %lu %f \n", fct_pairs[i].m_flow_id, fct_pairs[i].m_src, fct_pairs[i].m_dst, fct_pairs[i].m_size, fct_pairs[i].m_fct);
+	}
+
 }
 
 void get_pfc(FILE* fout, Ptr<QbbNetDevice> dev, uint32_t type){
@@ -616,7 +661,7 @@ int main(int argc, char *argv[])
 	topof.open(topology_file.c_str());
 	flowf.open(flow_file.c_str());
 	tracef.open(trace_file.c_str());
-	uint32_t node_num, switch_num, link_num, flow_num, trace_num;
+	uint32_t node_num, switch_num, link_num, trace_num;
 	topof >> node_num >> switch_num >> link_num;
 	flowf >> flow_num;
 	tracef >> trace_num;
@@ -680,12 +725,14 @@ int main(int argc, char *argv[])
 		uint32_t src, dst;
 		std::string data_rate, link_delay;
 		double error_rate;
-		topof >> src >> dst >> data_rate >> link_delay >> error_rate;
+		topof >> src >> dst >> data_rate >> link_delay;
+
+		error_rate = 0;
 
 		Ptr<Node> snode = n.Get(src), dnode = n.Get(dst);
 
-		qbb.SetDeviceAttribute("DataRate", StringValue(data_rate));
-		qbb.SetChannelAttribute("Delay", StringValue(link_delay));
+		qbb.SetDeviceAttribute("DataRate", StringValue(data_rate+"Gbps"));
+		qbb.SetChannelAttribute("Delay", StringValue(link_delay+"ns"));
 
 		if (error_rate > 0)
 		{
@@ -752,6 +799,7 @@ int main(int argc, char *argv[])
 				Ptr<QbbNetDevice> dev = DynamicCast<QbbNetDevice>(sw->GetDevice(j));
 				// set ecn
 				uint64_t rate = dev->GetDataRate().GetBitRate();
+				//std::cout<<"rate "<<rate<<std::endl;
 				NS_ASSERT_MSG(rate2kmin.find(rate) != rate2kmin.end(), "must set kmin for each link speed");
 				NS_ASSERT_MSG(rate2kmax.find(rate) != rate2kmax.end(), "must set kmax for each link speed");
 				NS_ASSERT_MSG(rate2pmax.find(rate) != rate2pmax.end(), "must set pmax for each link speed");
@@ -776,6 +824,8 @@ int main(int argc, char *argv[])
 
 	#if ENABLE_QP
 	FILE *fct_output = fopen(fct_output_file.c_str(), "w");
+	if(fct_output == NULL)//added, lkx
+		NS_ASSERT_MSG(false, "error opening fct_output");
 	//
 	// install RDMA driver
 	//
@@ -785,11 +835,19 @@ int main(int argc, char *argv[])
 			Ptr<RdmaHw> rdmaHw = CreateObject<RdmaHw>();
 			rdmaHw->SetAttribute("ClampTargetRate", BooleanValue(clamp_target_rate));
 			rdmaHw->SetAttribute("AlphaResumInterval", DoubleValue(alpha_resume_interval));
-			rdmaHw->SetAttribute("RPTimer", DoubleValue(rp_timer));
 			rdmaHw->SetAttribute("FastRecoveryTimes", UintegerValue(fast_recovery_times));
 			rdmaHw->SetAttribute("EwmaGain", DoubleValue(ewma_gain));
-			rdmaHw->SetAttribute("RateAI", DataRateValue(DataRate(rate_ai)));
-			rdmaHw->SetAttribute("RateHAI", DataRateValue(DataRate(rate_hai)));
+
+			if(n.Get(i)->GetId() % 2 == 0){
+				rdmaHw->SetAttribute("RPTimer", DoubleValue(rp_timer));
+				rdmaHw->SetAttribute("RateAI", DataRateValue(DataRate(rate_ai)));
+				rdmaHw->SetAttribute("RateHAI", DataRateValue(DataRate(rate_hai)));
+			}else{
+				rdmaHw->SetAttribute("RPTimer", DoubleValue(500));
+				rdmaHw->SetAttribute("RateAI", DataRateValue(DataRate(rate_ai)));
+				rdmaHw->SetAttribute("RateHAI", DataRateValue(DataRate("100Mb/s")));
+			}
+
 			rdmaHw->SetAttribute("L2BackToZero", BooleanValue(l2_back_to_zero));
 			rdmaHw->SetAttribute("L2ChunkSize", UintegerValue(l2_chunk_size));
 			rdmaHw->SetAttribute("L2AckInterval", UintegerValue(l2_ack_interval));
@@ -914,15 +972,17 @@ int main(int argc, char *argv[])
 	{
 		uint32_t src, dst, pg, maxPacketCount, port, dport;
 		double start_time, stop_time;
-		flowf >> src >> dst >> pg >> dport >> maxPacketCount >> start_time;
+		flowf >> src >> dst >> maxPacketCount >> start_time;
+		pg = 3;
+		dport = 100;
+
 		NS_ASSERT(n.Get(src)->GetNodeType() == 0 && n.Get(dst)->GetNodeType() == 0);
 		port = portNumder[src]++; // get a new port number 
-		RdmaClientHelper clientHelper(pg, serverAddress[src], serverAddress[dst], port, dport, maxPacketCount, has_win?(global_t==1?maxBdp:pairBdp[n.Get(src)][n.Get(dst)]):0, global_t==1?maxRtt:pairRtt[n.Get(src)][n.Get(dst)]);
+		RdmaClientHelper clientHelper(pg, serverAddress[src], serverAddress[dst], port, dport, maxPacketCount, has_win?(global_t==1?maxBdp:pairBdp[n.Get(src)][n.Get(dst)]):0, global_t==1?maxRtt:pairRtt[n.Get(src)][n.Get(dst)], src, dst, flow_index++);
 		ApplicationContainer appCon = clientHelper.Install(n.Get(src));
 		appCon.Start(Seconds(start_time));
 		appCon.Stop(Seconds(stop_time));
 	}
-
 
 	topof.close();
 	flowf.close();

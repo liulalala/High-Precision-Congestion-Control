@@ -1,0 +1,14 @@
+default para:
+RATE_AI=50Mb/s，RATE_HAI=100Mb/s，RP_TIMER=900us
+kmin = 10KB, kmax = 20KB, PMAX_MAP = 0.2
+
+settings:
+the same topo as Homa
+16 hosts per rack, 9 rack switches, 4 core switches.
+RTT = 8us
+each host connect with rack via 10Gbps link
+
+flow pattern:
+host 0 -> host 16
+host 1 -> host 16
+each host generates 4 flows, whose size is 100M.

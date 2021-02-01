@@ -87,6 +87,21 @@ RdmaClient::GetTypeId (void)
                    UintegerValue (0),
                    MakeUintegerAccessor (&RdmaClient::m_baseRtt),
                    MakeUintegerChecker<uint64_t> ())
+   .AddAttribute ("SRCId",
+				   "source id",
+				   UintegerValue (0),
+				   MakeUintegerAccessor (&RdmaClient::m_src),
+				   MakeUintegerChecker<uint32_t> ())
+	.AddAttribute ("DSTId",
+				   "dst id",
+				   UintegerValue (0),
+				   MakeUintegerAccessor (&RdmaClient::m_dst),
+				   MakeUintegerChecker<uint32_t> ())
+	.AddAttribute ("FLOWId",
+				   "flow id",
+				   UintegerValue (0),
+				   MakeUintegerAccessor (&RdmaClient::m_flow_id),
+				   MakeUintegerChecker<uint32_t> ())
   ;
   return tid;
 }
@@ -134,7 +149,7 @@ void RdmaClient::StartApplication (void)
   // get RDMA driver and add up queue pair
   Ptr<Node> node = GetNode();
   Ptr<RdmaDriver> rdma = node->GetObject<RdmaDriver>();
-  rdma->AddQueuePair(m_size, m_pg, m_sip, m_dip, m_sport, m_dport, m_win, m_baseRtt);
+  rdma->AddQueuePair(m_size, m_pg, m_sip, m_dip, m_sport, m_dport, m_win, m_baseRtt, m_src, m_dst, m_flow_id);
 }
 
 void RdmaClient::StopApplication ()

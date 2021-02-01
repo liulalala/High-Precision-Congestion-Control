@@ -80,6 +80,16 @@ void RdmaQueuePair::SetBaseRtt(uint64_t baseRtt){
 void RdmaQueuePair::SetVarWin(bool v){
 	m_var_win = v;
 }
+void RdmaQueuePair::SetSrc(uint32_t src){
+	m_src = src;
+}
+
+void RdmaQueuePair::SetDst(uint32_t dst){
+	m_dst = dst;
+}
+void RdmaQueuePair::SetFlowId(uint32_t flow_id){
+	m_flow_id = flow_id;
+}
 
 uint64_t RdmaQueuePair::GetBytesLeft(){
 	return m_size >= snd_nxt ? m_size - snd_nxt : 0;

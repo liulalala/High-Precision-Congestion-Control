@@ -28,7 +28,7 @@ RdmaClientHelper::RdmaClientHelper ()
 {
 }
 
-RdmaClientHelper::RdmaClientHelper (uint16_t pg, Ipv4Address sip, Ipv4Address dip, uint16_t sport, uint16_t dport, uint64_t size, uint32_t win, uint64_t baseRtt)
+RdmaClientHelper::RdmaClientHelper (uint16_t pg, Ipv4Address sip, Ipv4Address dip, uint16_t sport, uint16_t dport, uint64_t size, uint32_t win, uint64_t baseRtt, uint32_t src, uint32_t dst, uint32_t flowId)
 {
 	m_factory.SetTypeId (RdmaClient::GetTypeId ());
 	SetAttribute ("PriorityGroup", UintegerValue (pg));
@@ -39,6 +39,9 @@ RdmaClientHelper::RdmaClientHelper (uint16_t pg, Ipv4Address sip, Ipv4Address di
 	SetAttribute ("WriteSize", UintegerValue (size));
 	SetAttribute ("Window", UintegerValue (win));
 	SetAttribute ("BaseRtt", UintegerValue (baseRtt));
+	SetAttribute ("SRCId", UintegerValue (src));
+	SetAttribute ("DSTId", UintegerValue (dst));
+	SetAttribute ("FLOWId", UintegerValue (flowId));
 }
 
 void

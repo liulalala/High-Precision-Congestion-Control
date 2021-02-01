@@ -12,7 +12,7 @@ public:
 	static const uint32_t timeWidth = 24;
 	static const uint32_t bytesWidth = 20;
 	static const uint32_t qlenWidth = 17;
-	static const uint64_t lineRateValues[8];
+	static const uint64_t lineRateValues[10];
 	union{
 		struct {
 			uint64_t lineRate: 64-timeWidth-bytesWidth-qlenWidth,
@@ -50,16 +50,22 @@ public:
 		bytes = _bytes / (byteUnit * multi);
 		qlen = _qlen / (qlenUnit * multi);
 		switch (_rate){
-			case 25000000000lu:
+			case 10000000000lu:
 				lineRate=0;break;
-			case 50000000000lu:
+			case 20000000000lu:
 				lineRate=1;break;
-			case 100000000000lu:
+			case 25000000000lu:
 				lineRate=2;break;
-			case 200000000000lu:
+			case 40000000000lu:
 				lineRate=3;break;
-			case 400000000000lu:
+			case 50000000000lu:
 				lineRate=4;break;
+			case 100000000000lu:
+				lineRate=5;break;
+			case 200000000000lu:
+				lineRate=6;break;
+			case 400000000000lu:
+				lineRate=7;break;
 			default:
 				printf("Error: IntHeader unknown rate: %lu\n", _rate);
 				break;
